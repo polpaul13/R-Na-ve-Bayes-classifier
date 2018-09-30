@@ -1,0 +1,176 @@
+
+install.packages("e1071")
+
+library(e1071)
+
+
+
+
+
+
+
+########1################
+
+d1 <- c(1, 0, 0, 1, 0, 0, 0, 1)
+d2 <- c(0, 1, 0, 1, 1, 0, 0, 0)
+d3 <- c(0, 0, 1, 0, 0, 0, 1, 0)
+d4 <- c(0, 0, 0, 1, 0, 0, 0, 0)
+d5 <- c(0, 0, 0, 0, 0, 0, 1, 0)
+d6 <- c(0, 0, 0, 1, 0, 1, 0, 1)
+d7 <- c(0, 0, 1, 0, 0, 1, 0, 1)
+d8 <- c(1, 0, 0, 0, 0, 0, 0, 1)
+d9 <- c(0, 0, 0, 0, 0, 1, 0, 1)
+d10 <- c(1, 1, 0, 0, 0, 1, 0, 1)
+nb_df <- as.data.frame(rbind(d1,d2,d3,d4,d5,d6,d7,d8,d9,d10))
+names(nb_df) <- c("BadCredit", "HasStableJob", "OwnsHouse", "BigLoan",
+                  "HasLargeBankAccount", "HasPriorLoans", "HasDependents", "Decision")
+
+
+
+
+
+#################2#################
+
+table(nb_df$Decision)
+
+countPositive <- length(which(nb_df$Decision == 1))
+countNegative <- length(which(nb_df$Decision == 0))
+probabilityPositive <- countPositive/ nrow(nb_df)
+probabilityNegative <- countNegative/nrow(nb_df)
+priors <- c(probabilityNegative,probabilityPositive)
+print(priors)
+
+
+###################3#################
+
+
+BadCredit1 <- c(0,0)
+HasStableJob1 <- c(0,0)
+OwnsHouse1 <- c(0,0)
+BigLoan1 <- c(0,0)
+HasLargeBankAccount1 <- c(0,0)
+HasPriorLoans1 <- c(0,0)
+HasDependents1 <- c(0,0)
+
+summary_df <- data.frame(BadCredit1, HasStableJob1, OwnsHouse1, BigLoan1, HasLargeBankAccount1, HasPriorLoans1, HasDependents1)
+
+for (i in 1:7){
+  
+  summary_df[1,i] <- round(nrow(nb_df[which(nb_df[,i]==1 & nb_df[,8]==0),])/length(which(nb_df[,8] == 0)),2)
+  summary_df[2,i] <- round(nrow(nb_df[which(nb_df[,i]==1 & nb_df[,8]==1),])/length(which(nb_df[,8] == 1)),2)}
+
+summary_df$Decision <- c(0,1)
+summary_df
+  
+#4
+
+# These are the probabilitites  P(Fi = 1|C) meaning that trere are the probabilities of a feature being 1 (value 1) given the class.
+#  we could also compute P(Fi = 0|C) if we wanted the sum of each column to add up to 1
+  
+
+#5
+
+# In order to calculate the probabilities P(Fi = 0|C) we could just substract each probability from 1. 
+# For example the probability that the bank will decide to give out a loan (Decision=0) when the customer owns a house (OwnsHouse=0) is
+# P(OwnsHouse = 0|C=0) = 1 - P(OwnsHouse = 1|C=0) = 1-0.17 = 0.83.
+
+
+#6a
+
+# Likewise the probability that the bank will decide to give out a loan (Decision=0) when the customer has a bad credit score (BadCredit=0) is
+# P(BadCredi=0|C=0) = 1 - P(BadCredi=1|C=0) = 1 - 0 = 1.
+# This is obvious a problem in prediction because in our dataset there isn't a case in which the bank declines the loan to a customer who has a badcredit score.
+
+
+#6b
+
+BadCredit <- c(0,0,0,0)
+HasStableJob <- c(0,0,0,0)
+OwnsHouse <- c(0,0,0,0)
+BigLoan <- c(0,0,0,0)
+HasLargeBankAccount <- c(0,0,0,0)
+HasPriorLoans <- c(0,0,0,0)
+HasDependents <- c(0,0,0,0)
+
+summary_df_pred <- data.frame(BadCredit, HasStableJob, OwnsHouse, BigLoan, HasLargeBankAccount, HasPriorLoans, HasDependents)
+rownames(summary_df_pred) <- c("Feature1C0","Feature1C1","Feature0C0","Feature0C1")
+
+for (i in 1:7){
+  
+  summary_df_pred[1,i] <- round((nrow(nb_df[which(nb_df[,i]==1 & nb_df[,8]==0),])+1)/(length(which(nb_df[,8] == 0))+2),2)
+  summary_df_pred[2,i] <- round((nrow(nb_df[which(nb_df[,i]==1 & nb_df[,8]==1),])+1)/(length(which(nb_df[,8] == 1))+2),2)
+  summary_df_pred[3,i] <- round((nrow(nb_df[which(nb_df[,i]==0 & nb_df[,8]==0),])+1)/(length(which(nb_df[,8] == 0))+2),2)
+  summary_df_pred[4,i] <- round((nrow(nb_df[which(nb_df[,i]==0 & nb_df[,8]==1),])+1)/(length(which(nb_df[,8] == 1))+2),2)
+}
+summary_df_pred
+
+
+#7
+
+PredValue0 <- 1
+PredValue0[1:10] <- 1
+
+PredValue1 <- 1
+PredValue1[1:10] <-  1
+
+Class0 <- 1
+Class0[1:10] <- 1
+
+Class1 <- 1
+Class1[1:10] <- 1
+
+PredDecision<-0
+PredDecision[1:10] <- 0
+
+predict_nb_df <- function(test_df, priors, prob_matrix) {
+  
+  for (i in 1:10){
+    
+    for (j in 1:7){
+      
+      if(test_df[i,j]==1){
+        PredVal0 <- prob_matrix[1,j]
+        PredVal1 <- prob_matrix[2,j]
+        
+      }
+      else 
+      {
+        PredVal0 <- prob_matrix[3,j]
+        PredVal1 <- prob_matrix[4,j] 
+      }
+      
+      
+      PredValue0[i] <- PredValue0[i] * PredVal0
+      
+      PredValue1[i] <- PredValue1[i] * PredVal1
+      
+    }
+    
+    Class0[i] <- PredValue0[i] * priors[1]
+    
+    Class1[i] <- PredValue1[i] * priors[2]
+    
+    
+    if(Class0[i]>Class1[i]){
+      PredDecision[i] <- 0 
+    }
+    else
+    {
+      PredDecision[i] <- 1
+    }
+    
+  }
+  
+  print(PredDecision)
+  
+}
+
+
+#8
+
+Predicted_Decision <- predict_nb(nb_df,priors,summary_df_pred)
+
+table(nb_df$Decision,Predicted_Decision)
+Accuracy <- (mean(nb_df$Decision==Predicted_Decision)) *100
+
+print(paste("The accuracy of the model is:",Accuracy,"%"))
