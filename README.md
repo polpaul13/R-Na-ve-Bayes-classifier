@@ -1,1 +1,1 @@
-# R-Na-ve-Bayes-classifier
+# R-Naive-Bayes-classifier
